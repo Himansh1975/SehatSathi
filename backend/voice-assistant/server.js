@@ -31,12 +31,11 @@ mongoose.connect(process.env.MONGODB_URI, {
 //EXPRESS SERVER SETUP
 const app = express();
 
+// Permissive CORS for hackathon demo
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL, 'https://sehat-sathi.vercel.app', /\.vercel\.app$/] 
-    : ['http://localhost:5173', 'http://localhost:3000'],
+  origin: true, // Allow all origins for now
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true
 }));
 
@@ -65,8 +64,10 @@ app.use('/api/med-info', medicineInfoRoutes);
 
 //CHAT ENDPOINT
 app.post('/chat', async (req, res) => {
+  console.log('Chat request received:', req.body);
   try {
     const { answer, lang } = await chat(req.body.text || '');
+    console.log('Chat response:', { answer, lang });
     res.json({ answer, lang });
   } catch (err) {
     console.error("Chat handler failed:", err);
