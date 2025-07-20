@@ -4,7 +4,7 @@
   "description": "Voice-First AI Health Companion",
   "scripts": {
     "start": "cd backend/voice-assistant && npm start",
-    "build": "cd backend/voice-assistant && npm install",
+    "build": "cd frontend && npm install && npm run build",
     "dev": "cd backend/voice-assistant && npm run dev"
   },
   "engines": {
