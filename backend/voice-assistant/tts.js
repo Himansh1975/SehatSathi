@@ -11,19 +11,26 @@ function detectLang(str = '') {
 
 /**
  * Generate speech (MP3 buffer) from text.
- * OpenAI TTS supports multiple languages automatically; we still send a
- * language hint for clarity.
+ * @param {string} text - Text to convert to speech
+ * @param {string} lang - Language code ('hi' or 'en')
  */
-export async function tts(text = '') {
-  const langHint = detectLang(text);
+export async function tts(text = '', lang = null) {
+  const langHint = lang || detectLang(text);
+  
+  // Use different voice for different languages
+  const voice = langHint === 'hi' ? 'alloy' : 'nova';
 
-  const speech = await openai.audio.speech.create({
-    model: 'tts-1',
-    voice: 'alloy',           // multi-lingual voice works for hi & en
-    input: text,
-    response_format: 'mp3',  
-    language: langHint        // ignored by older SDKs harmless
-  });
+  try {
+    const speech = await openai.audio.speech.create({
+      model: 'tts-1',
+      voice: voice,
+      input: text,
+      response_format: 'mp3'
+    });
 
-  return Buffer.from(await speech.arrayBuffer());
+    return Buffer.from(await speech.arrayBuffer());
+  } catch (error) {
+    console.error('TTS Error:', error);
+    throw new Error(`TTS conversion failed: ${error.message}`);
+  }
 }

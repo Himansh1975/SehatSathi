@@ -23,11 +23,13 @@ const Scanner = () => {
 
   //connect to backend server - used id
   useEffect(() => {
-    axios.get("http://localhost:8080/api/med-info/recent")
+    const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+    
+    axios.get(`${apiBase}/api/med-info/recent`)
       .then(res => setRecentIds(res.data.meds || []))
       .catch(err => console.error("Failed to fetch recent scans:", err));
 
-    axios.get("http://localhost:8080/api/reminders/all", { params: { userId } })
+    axios.get(`${apiBase}/api/reminders/all`, { params: { userId } })
       .then(res => {
         const patched = (res.data.reminders || []).map(r => {
           const hour = new Date(r.due).getHours();
@@ -50,7 +52,8 @@ const Scanner = () => {
     formData.append("userId", userId);
 
     try {
-      const { data } = await axios.post("http://localhost:8080/api/med-info/analyze", formData, {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+      const { data } = await axios.post(`${apiBase}/api/med-info/analyze`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -64,7 +67,8 @@ const Scanner = () => {
 
   const fetchById = async (id) => {
     try {
-      const { data } = await axios.get(`http://localhost:8080/api/med-info/${id}`);
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+      const { data } = await axios.get(`${apiBase}/api/med-info/${id}`);
       const med = Array.isArray(data.medicine) ? data.medicine[0] : data.medicine;
 
       setOcrResult(`Medicine: ${med.name}`);
@@ -89,7 +93,8 @@ const Scanner = () => {
     formData.append("userId", userId);
 
     try {
-      const res = await axios.post("http://localhost:8080/api/prescription/analyze", formData, {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+      const res = await axios.post(`${apiBase}/api/prescription/analyze`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -103,7 +108,8 @@ const Scanner = () => {
 
   const acknowledgeReminder = async (id) => {
     try {
-      await axios.post(`http://localhost:8080/api/reminders/${id}/ack`);
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+      await axios.post(`${apiBase}/api/reminders/${id}/ack`);
       setAllReminders((prev) => prev.filter((r) => r._id !== id));
     } catch (err) {
       console.error("Acknowledge failed:", err);

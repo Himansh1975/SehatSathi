@@ -1,18 +1,9 @@
 //chat.js – bilingual (Hindi / English) Support
 
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
 import OpenAI from 'openai';
 
-// Load .env
-const envPath = path.resolve(process.cwd(), '.env');
-console.log("Checking .env path:", envPath);
-console.log(">>> RAW FILE CONTENT:\n", fs.readFileSync(envPath, 'utf8'));
-
-dotenv.config({ path: envPath });
-
-console.log("Loaded OpenAI key:", process.env.OPENAI_API_KEY?.slice(0, 10));
+dotenv.config();
 
 // Initialize OpenAI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -32,12 +23,8 @@ function detectLang(str = '') {
 export async function chat(userText = '') {
   const lang = detectLang(userText);
   const systemPrompt = lang === 'hi'
-  ? `आप एक सहायक वॉयस असिस्टेंट हैं। कृपया सभी उत्तर **सरल और शुद्ध हिंदी** में दीजिए। उपयोगकर्ता की भाषा बदलने पर उसी भाषा में उत्तर दें।`
-  : `You are a helpful voice assistant. Reply clearly in the same language the user uses.`;
-
-  console.log("language detected:", lang);
-  console.log("user input:", userText);
-  console.log("system prompt being used:", systemPrompt);
+    ? `आप एक सहायक स्वास्थ्य सहायक हैं। आप बुजुर्गों की मदद करते हैं। सभी उत्तर **सरल और शुद्ध हिंदी** में दीजिए। स्वास्थ्य सलाह दें लेकिन डॉक्टर से मिलने की सलाह भी दें।`
+    : `You are a helpful health assistant for elderly people. Provide clear health advice but always recommend consulting with doctors for serious concerns. Keep responses simple and caring.`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -45,14 +32,25 @@ export async function chat(userText = '') {
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userText }
-      ]
+      ],
+      max_tokens: 150,
+      temperature: 0.7
     });
 
-    // return completion.choices[0].message.content.trim();
-    return { answer: completion.choices[0].message.content.trim(), lang };
+    return { 
+      answer: completion.choices[0].message.content.trim(), 
+      lang 
+    };
 
   } catch (err) {
     console.error("OpenAI chat failed:", err);
-    return "I'm having trouble responding right now.";
+    const errorMessage = lang === 'hi' 
+      ? "मुझे अभी जवाब देने में परेशानी हो रही है। कृपया फिर से कोशिश करें।"
+      : "I'm having trouble responding right now. Please try again.";
+    
+    return { 
+      answer: errorMessage, 
+      lang 
+    };
   }
 }
