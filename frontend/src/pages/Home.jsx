@@ -1,4 +1,4 @@
-import VoiceImg from '../assets/Voice.png';
+import VoiceImg from '../assets/voice.png';
 import MedScannerImg from '../assets/medScanner.png';
 import DashboardImg from '../assets/dashboard.png';
 import SehatSathiLogo from '../assets/sehatsathi.png';
