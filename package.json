@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Voice-First AI Health Companion",
   "scripts": {
-    "start": "cd backend/voice-assistant && npm start",
-    "build": "cd backend/voice-assistant && npm install",
+    "start": "cd backend/voice-assistant && python3 stt_server.py & npm start",
+    "build": "cd backend/voice-assistant && npm install && pip3 install -r requirements.txt",
     "dev": "cd backend/voice-assistant && npm run dev"
   },
   "engines": {
