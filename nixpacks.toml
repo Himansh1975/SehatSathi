@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ['nodejs_18', 'python3', 'python3Packages.pip']
+nixPkgs = ['nodejs_18']
 
 [phases.build]
-cmds = ['cd backend/voice-assistant && npm install && pip3 install -r requirements.txt']
+cmds = ['cd backend/voice-assistant && npm install']
 
 [start]
-cmd = 'cd backend/voice-assistant && python3 stt_server.py & npm start'
+cmd = 'cd backend/voice-assistant && npm start'

@@ -4,24 +4,22 @@ const PY_WS_URL = 'ws://localhost:2700';
 
 export function initSTT(wss) {
   wss.on('connection', (clientWs) => {
-    const pyWs = new WebSocket(PY_WS_URL);
-
-    pyWs.on('message', (msg) => clientWs.send(msg));
-    // pyWs.on('message', (msg) => {
-    //   if (typeof msg === 'string') {
-    //     clientWs.send(msg);
-    //   }
-    // });
-    pyWs.on('error', (err) => { console.error('Python STT error:', err); clientWs.close(); });
-
+    console.log('STT WebSocket connection established');
+    
+    // For now, send a mock response since Python STT is not available in production
     clientWs.on('message', (audioChunk) => {
-      if (pyWs.readyState === WebSocket.OPEN) pyWs.send(audioChunk);
+      // Mock STT response for demo purposes
+      setTimeout(() => {
+        clientWs.send(JSON.stringify({
+          text: "STT service temporarily unavailable in production. Please use text chat.",
+          final: true
+        }));
+      }, 1000);
     });
 
-    const cleanup = () => { if (pyWs.readyState === WebSocket.OPEN) pyWs.close(); };
-    clientWs.on('close', cleanup);
-    clientWs.on('error', cleanup);
+    clientWs.on('close', () => console.log('STT client disconnected'));
+    clientWs.on('error', (err) => console.error('STT WebSocket error:', err));
   });
 
-  console.log('STT proxy ready – forwarding to', PY_WS_URL);
+  console.log('STT service initialized (mock mode for production)');
 }
