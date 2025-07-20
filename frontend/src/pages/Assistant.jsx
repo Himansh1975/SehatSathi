@@ -1,4 +1,3 @@
-import Sanscript from 'sanscript';
 import { useState, useRef, useEffect } from "react";
 import { FiMic, FiSend, FiAlertCircle } from "react-icons/fi";
 import { BsCapsule, BsPhone, BsFlower1, BsPlusCircle } from "react-icons/bs";
@@ -81,10 +80,7 @@ const Assistant = () => {
 
         console.log("STT raw:", text); 
        
-        const isRoman = /^[a-zA-Z\s]+$/.test(text);
-        const output = sttLang === 'hi'
-          ? (isRoman ? Sanscript.t(text, 'itrans', 'devanagari') : text)
-          : text;  
+        const output = text; // Browser STT already provides correct script  
 
         console.log("STT converted:", output); 
 
