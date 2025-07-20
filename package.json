@@ -1,0 +1,13 @@
+{
+  "name": "sehatsathi",
+  "version": "1.0.0",
+  "description": "Voice-First AI Health Companion",
+  "scripts": {
+    "start": "cd backend/voice-assistant && npm start",
+    "build": "cd backend/voice-assistant && npm install",
+    "dev": "cd backend/voice-assistant && npm run dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

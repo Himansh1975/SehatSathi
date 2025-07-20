@@ -1,8 +1,0 @@
-[phases.setup]
-nixPkgs = ['nodejs', 'npm']
-
-[phases.build]
-cmds = ['cd backend/voice-assistant && npm ci']
-
-[start]
-cmd = 'cd backend/voice-assistant && npm start'
