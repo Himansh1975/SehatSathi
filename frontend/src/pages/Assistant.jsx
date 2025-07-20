@@ -31,62 +31,133 @@ const Assistant = () => {
   useEffect(() => () => stopRecording(), []);
 
   const [sttLang, setSttLang] = useState('en'); // 'en' or 'hi'
+  const [useBrowserSTT, setUseBrowserSTT] = useState(false);
+  const recognitionRef = useRef(null);
   
   const startRecording = async () => {
-    const audioContext = new AudioContext({ sampleRate: 16000 });
-    await audioContext.audioWorklet.addModule("/worklets/pcm-processor.js");
+    // Try browser Web Speech API first (works in production)
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      return startBrowserSTT();
+    }
+    
+    // Fallback to WebSocket STT (development only)
+    try {
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      await audioContext.audioWorklet.addModule("/worklets/pcm-processor.js");
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const micSource = audioContext.createMediaStreamSource(stream);
-    const worklet = new AudioWorkletNode(audioContext, "pcm-processor");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const micSource = audioContext.createMediaStreamSource(stream);
+      const worklet = new AudioWorkletNode(audioContext, "pcm-processor");
 
-    const ws = new WebSocket("ws://localhost:2700");
-    // const ws = new WebSocket(
-    //   process.env.NODE_ENV === 'production'
-    //     ? "wss://<your-node-backend>.onrender.com/ws/stt"
-    //     : "ws://localhost:8080/ws/stt"
-    // );
+      const ws = new WebSocket(
+        import.meta.env.PROD 
+          ? `wss://${window.location.host}/ws/stt`
+          : "ws://localhost:8080/ws/stt"
+      );
 
-    ws.binaryType = "arraybuffer";
+      ws.binaryType = "arraybuffer";
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ lang: sttLang }));
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ lang: sttLang }));
 
-      worklet.port.onmessage = (e) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(e.data);
+        worklet.port.onmessage = (e) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(e.data);
+        };
+        micSource.connect(worklet);
+        audioContextRef.current = audioContext;
+        micStreamRef.current = stream;
+        workletNodeRef.current = worklet;
+        sttWsRef.current = ws;
+        setIsRecording(true);
       };
-      micSource.connect(worklet);
-      audioContextRef.current = audioContext;
-      micStreamRef.current = stream;
-      workletNodeRef.current = worklet;
-      sttWsRef.current = ws;
-      setIsRecording(true);
-    };
 
-    ws.onmessage = (event) => {
-      const { text, final } = JSON.parse(event.data);
+      ws.onerror = () => {
+        console.log("WebSocket STT failed, falling back to browser STT");
+        startBrowserSTT();
+      };
 
-      console.log("STT raw:", text); 
-     
+      ws.onmessage = (event) => {
+        const { text, final } = JSON.parse(event.data);
+
+        console.log("STT raw:", text); 
+       
         const isRoman = /^[a-zA-Z\s]+$/.test(text);
         const output = sttLang === 'hi'
           ? (isRoman ? Sanscript.t(text, 'itrans', 'devanagari') : text)
           : text;  
 
-      console.log("STT converted:", output); 
+        console.log("STT converted:", output); 
 
-      if (!final) setPartial(output);
-      else {
+        if (!final) setPartial(output);
+        else {
+          setPartial('');
+          stopRecording();
+          sendToChat(output);
+        }
+      };
+    } catch (err) {
+      console.log("Audio worklet failed, using browser STT");
+      startBrowserSTT();
+    }
+  };
+
+  const startBrowserSTT = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = sttLang === 'hi' ? 'hi-IN' : 'en-US';
+    
+    recognition.onstart = () => {
+      setIsRecording(true);
+      setUseBrowserSTT(true);
+      console.log('Browser STT started');
+    };
+    
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      
+      setPartial(interimTranscript);
+      
+      if (finalTranscript) {
         setPartial('');
         stopRecording();
-        sendToChat(output);
+        sendToChat(finalTranscript);
       }
     };
+    
+    recognition.onerror = (event) => {
+      console.error('Browser STT error:', event.error);
+      stopRecording();
+    };
+    
+    recognition.start();
+    recognitionRef.current = recognition;
   };
 
   const stopRecording = () => {
     setIsRecording(false);
     setPartial("");
+    setUseBrowserSTT(false);
+    
+    // Stop browser STT
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    
+    // Stop WebSocket STT
     workletNodeRef.current?.disconnect();
     audioContextRef.current?.close();
     micStreamRef.current?.getTracks()?.forEach(t => t.stop());
@@ -101,27 +172,27 @@ const Assistant = () => {
     setMessages(prev => [...prev, { from: "user", text }]);
     setInputText("");
     try {
-      const res = await fetch("http://localhost:8080/chat", {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+      const res = await fetch(`${apiBase}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })
       });
-      // const { answer } = await res.json();
       const { answer, lang } = await res.json();
       setMessages(prev => [...prev, { from: "bot", text: answer }]);
-      // playTTS(answer);
       playTTS(answer, lang); 
     } catch (err) {
       console.error("Chat error:", err.message);
+      setMessages(prev => [...prev, { from: "bot", text: "Sorry, I'm having trouble connecting. Please try again." }]);
     }
   };
 
   const playTTS = async (text, lang = "en") => {
     try {
-      const res = await fetch("http://localhost:8080/tts", {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+      const res = await fetch(`${apiBase}/tts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // body: JSON.stringify({ text })
         body: JSON.stringify({ text, lang }) 
       });
       const audioBlob = await res.blob();
@@ -163,10 +234,13 @@ const Assistant = () => {
         <div className="mt-4 flex gap-2">
           <button
             onClick={() => (isRecording ? stopRecording() : startRecording())}
-            className={`p-3 rounded-full shadow-md ${isRecording ? "bg-red-500 animate-pulse" : "bg-teal-600"} text-white`}
+            className={`p-3 rounded-full shadow-md ${isRecording ? "bg-red-500 animate-pulse" : "bg-teal-600"} text-white relative`}
             title={isRecording ? "Stop Recording" : "Start Voice"}
           >
             <FiMic />
+            {useBrowserSTT && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+            )}
           </button>
 
           <input
