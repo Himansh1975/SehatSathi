@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard';
 import Offline from './pages/Offline';
 import ScrollToTop from './components/ScrollToTop'; 
+import ProtectedRoute from './components/ProtectedRoute';
 import './index.css';
 
 function AppContent() {
@@ -23,11 +24,23 @@ function AppContent() {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/assistant" element={<Assistant />} />
-          <Route path="/scanner" element={<Scanner />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/assistant" element={
+            <ProtectedRoute>
+              <Assistant />
+            </ProtectedRoute>
+          } />
+          <Route path="/scanner" element={
+            <ProtectedRoute>
+              <Scanner />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
           <Route path="/offline" element={<Offline />} />
         </Routes>
       </main>

@@ -1,13 +1,29 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Logo from '../assets/logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [email, setEmail] = useState('demo@sehatsathi.com');
+  const [password, setPassword] = useState('demo123');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // For hackathon demo - skip actual auth
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+    
+    const result = await login(email, password);
+    
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
   };
 
   return (
@@ -17,9 +33,15 @@ const Login = () => {
           <img src={Logo} alt="logo" className="w-10 mb-4" />
           <h2 className="text-2xl font-bold">Welcome Back</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Demo mode - Click login to continue
+            Enter your credentials to login
           </p>
         </div>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -28,7 +50,8 @@ const Login = () => {
               type="email"
               placeholder="demo@sehatsathi.com"
               className="border px-3 py-2 text-sm rounded w-full focus:outline-none focus:ring-2 focus:ring-teal-500"
-              defaultValue="demo@sehatsathi.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div>
@@ -37,14 +60,16 @@ const Login = () => {
               type="password"
               placeholder="••••••••"
               className="border px-3 py-2 text-sm rounded w-full focus:outline-none focus:ring-2 focus:ring-teal-500"
-              defaultValue="demo123"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white text-sm py-2 rounded mt-4"
+            disabled={loading}
+            className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white text-sm py-2 rounded mt-4"
           >
-            Login to SehatSathi
+            {loading ? 'Logging in...' : 'Login to SehatSathi'}
           </button>
         </form>
         

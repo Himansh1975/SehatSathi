@@ -1,11 +1,19 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Logo2 from '../assets/logo2.png'; 
 
 const Navbar = () => {
+  const { user, logout, isAuthenticated } = useAuth();
+  
   const linkClass = ({ isActive }) =>
     isActive
       ? "text-teal-600 font-semibold"
       : "text-gray-700 hover:text-teal-600";
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/';
+  };
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -25,9 +33,23 @@ const Navbar = () => {
           <NavLink to="/offline" className={linkClass}>Offline</NavLink>
         </nav>
 
-        <div className="flex gap-4 text-sm">
-          <NavLink to="/login" className="text-teal-600 hover:underline">Login</NavLink>
-          <NavLink to="/signup" className="bg-teal-600 text-white px-4 py-1 rounded hover:bg-teal-700">Sign Up</NavLink>
+        <div className="flex gap-4 text-sm items-center">
+          {isAuthenticated ? (
+            <>
+              <span className="text-gray-600">Hi, {user?.name}!</span>
+              <button 
+                onClick={handleLogout}
+                className="text-teal-600 hover:underline"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" className="text-teal-600 hover:underline">Login</NavLink>
+              <NavLink to="/signup" className="bg-teal-600 text-white px-4 py-1 rounded hover:bg-teal-700">Sign Up</NavLink>
+            </>
+          )}
         </div>
       </div>
     </header>

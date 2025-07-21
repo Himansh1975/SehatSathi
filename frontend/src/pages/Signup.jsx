@@ -1,13 +1,30 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Logo from '../assets/logo.png';
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { signup } = useAuth();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    // For hackathon demo - skip actual auth
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+    
+    const result = await signup(name, email, password);
+    
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
   };
 
   return (
@@ -27,7 +44,13 @@ const Signup = () => {
         <div className="p-8 bg-white flex items-center justify-center">
           <div className="w-full max-w-md">
             <h1 className="text-xl font-bold text-center text-gray-800 mb-2">Create Account</h1>
-            <p className="text-sm text-gray-500 text-center mb-6">Demo mode - Fill and submit to continue</p>
+            <p className="text-sm text-gray-500 text-center mb-6">Join SehatSathi today</p>
+            
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                {error}
+              </div>
+            )}
             
             <form onSubmit={handleSignup} className="space-y-4">
               <div>
@@ -36,7 +59,8 @@ const Signup = () => {
                   type="text"
                   placeholder="Enter your name"
                   className="w-full border rounded px-3 py-2 text-sm"
-                  defaultValue="Demo User"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div>
@@ -45,7 +69,8 @@ const Signup = () => {
                   type="email"
                   placeholder="Enter your email"
                   className="w-full border rounded px-3 py-2 text-sm"
-                  defaultValue="demo@sehatsathi.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div>
@@ -54,14 +79,16 @@ const Signup = () => {
                   type="password"
                   placeholder="Create password"
                   className="w-full border rounded px-3 py-2 text-sm"
-                  defaultValue="demo123"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
               <button
                 type="submit"
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 mt-4 rounded"
+                disabled={loading}
+                className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white py-2 mt-4 rounded"
               >
-                Join SehatSathi
+                {loading ? 'Creating Account...' : 'Join SehatSathi'}
               </button>
             </form>
             

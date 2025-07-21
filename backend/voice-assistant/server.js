@@ -10,6 +10,7 @@ dotenv.config();
 
 //IMPORT ROUTES & MODULES
 import medicineInfoRoutes from './routes/medicineInfo.js';
+import authRoutes from './routes/auth.js';
 import { initSTT } from './stt.js';
 import { chat } from './chat.js';
 import { tts } from './tts.js';
@@ -58,6 +59,7 @@ app.get('/health', (req, res) => {
 });
 
 //API ROUTES
+app.use('/api/auth', authRoutes);
 app.use('/api/prescription', prescriptionRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/med-info', medicineInfoRoutes);
